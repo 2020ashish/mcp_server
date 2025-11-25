@@ -140,7 +140,8 @@ async def search_assets_tool(
     limit: int = 10,
     detailed: bool = False,
     deployed: bool = False,
-    present_on_date: Optional[str] = None,
+    present_on_date_after: Optional[str] = None,
+    present_on_date_before: Optional[str] = None,
 ) -> str:
     """Search assets tool implementation"""
     
@@ -161,16 +162,19 @@ async def search_assets_tool(
             )
             return format_model_stats(data)
 
-        # Calculate current time for present_on_date filter if not provided
-        if not present_on_date:
-            from datetime import datetime, timezone
-            present_on_date = datetime.now(timezone.utc).isoformat()
+        # Calculate default time range if not provided (24 hour window)
+        if not present_on_date_after and not present_on_date_before:
+            from datetime import datetime, timezone, timedelta
+            now = datetime.now(timezone.utc)
+            present_on_date_before = now.strftime("%Y-%m-%d")
+            present_on_date_after = (now - timedelta(days=1)).strftime("%Y-%m-%d")
 
         if return_type == "count":
             data = await client.fetch_assets(
                 asset_id=asset_id, type_name=type_name, type_category=type_category,
                 label_name=label_name, region=region, cloud_provider=cloud_provider,
-                present_on_date=present_on_date,
+                present_on_date_after=present_on_date_after,
+                present_on_date_before=present_on_date_before,
                 page_size=1,
             )
             return f"Total assets: {data.get('count', 0)}"
@@ -178,7 +182,8 @@ async def search_assets_tool(
         data = await client.fetch_assets(
             asset_id=asset_id, type_name=type_name, type_category=type_category,
             label_name=label_name, region=region, cloud_provider=cloud_provider,
-            present_on_date=present_on_date,
+            present_on_date_after=present_on_date_after,
+            present_on_date_before=present_on_date_before,
             page_size=limit,
         )
         

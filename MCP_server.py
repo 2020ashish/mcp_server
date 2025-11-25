@@ -40,7 +40,8 @@ async def search_assets(
     limit: int = 10,
     detailed: bool = False,
     deployed: bool = False,
-    present_on_date: Optional[str] = None,
+    present_on_date_after: Optional[str] = None,
+    present_on_date_before: Optional[str] = None,
 ) -> str:
     
     """
@@ -58,7 +59,8 @@ async def search_assets(
         limit: Maximum results to return (default: 10)
         detailed: Include vulnerabilities and compliance data
         deployed: Set to True to get AI model deployment statistics (e.g. "Show me deployed models")
-        present_on_date: Filter assets present at a specific time (ISO 8601 format). Defaults to current time if not provided.
+        present_on_date_after: Start of time range (YYYY-MM-DD). Defaults to 24h ago if not provided.
+        present_on_date_before: End of time range (YYYY-MM-DD). Defaults to now if not provided.
     
     Returns:
         Formatted asset list, count, or model statistics
@@ -72,7 +74,8 @@ async def search_assets(
     """
     return await search_assets_tool(
         api_client, asset_id, type_name, type_category,
-        label_name, region, cloud_provider, return_type, limit, detailed, deployed, present_on_date
+        label_name, region, cloud_provider, return_type, limit, detailed, deployed,
+        present_on_date_after, present_on_date_before
     )
 
 

@@ -30,7 +30,8 @@ class AccuKnoxClient:
         label_name: Optional[str] = None,
         region: Optional[str] = None,
         cloud_provider: Optional[str] = None,
-        present_on_date: Optional[str] = None,
+        present_on_date_after: Optional[str] = None,
+        present_on_date_before: Optional[str] = None,
         page: int = 1,
         page_size: int = 100,
     ) -> dict:
@@ -51,8 +52,10 @@ class AccuKnoxClient:
             params["region"] = region
         if cloud_provider:
             params["cloud_provider"] = cloud_provider
-        if present_on_date:
-            params["present_on_date"] = present_on_date
+        if present_on_date_after:
+            params["present_on_date_after"] = present_on_date_after
+        if present_on_date_before:
+            params["present_on_date_before"] = present_on_date_before
         
         async with httpx.AsyncClient() as client:
             response = await client.get(
