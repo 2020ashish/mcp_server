@@ -3,7 +3,7 @@ Tool Implementations
 Shared between stdio and HTTP servers
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import httpx
@@ -114,31 +114,95 @@ def format_model_vulnerabilities(data: dict) -> str:
     return result
 
 
-def format_model_stats(data: dict) -> str:
-    """Format model deployment statistics"""
+# def format_model_stats(data: dict) -> str:
+#     """Format model deployment statistics"""
 
-    deployed_data = data.get("data", {}).get("deployed", {})
-    mode_type = data.get("data", {}).get("mode_type", {})
+#     deployed_data = data.get("data", {}).get("deployed", {})
+#     mode_type = data.get("data", {}).get("mode_type", {})
 
-    deployed_count = deployed_data.get("true", 0)
-    not_deployed_count = deployed_data.get("false", 0)
-    total_models = deployed_count + not_deployed_count
+#     deployed_count = deployed_data.get("true", 0)
+#     not_deployed_count = deployed_data.get("false", 0)
+#     total_models = deployed_count + not_deployed_count
 
-    llm_count = mode_type.get("LLM", 0)
+#     llm_count = mode_type.get("LLM", 0)
 
-    result = " AI Model Deployment Statistics\n"
+#     result = " AI Model Deployment Statistics\n"
+#     result += "=" * 70 + "\n\n"
+
+#     result += f"   Total Models Tracked: {total_models}\n"
+#     result += f"   ✅ Deployed Models:   {deployed_count}\n"
+#     result += f"   ❌ Not Deployed:      {not_deployed_count}\n\n"
+
+#     if llm_count > 0:
+#         result += f"   Model Types:\n"
+#         result += f"   - LLM (Large Language Models): {llm_count}\n"
+
+#     return result
+
+def format_ai_assets_stats(data: dict) -> str:
+    """Format AI assets statistics (deployed vs not deployed)"""
+    
+    # The API response structure:
+    # data -> data -> provider -> data -> list of assets
+    
+    root_data = data.get("data", {})
+    # If total_count is not in root_data, we might need to sum it up or it might be missing
+    total_count = root_data.get("total_count", 0)
+    
+    deployed_models = []
+    undeployed_models = []
+    
+    # Iterate through potential providers (keys in root_data)
+    for key, value in root_data.items():
+        if key == "total_count" or not isinstance(value, dict):
+            continue
+            
+        # Check for 'data' which should be a list of assets
+        provider_assets = value.get("data", [])
+        if not isinstance(provider_assets, list):
+            continue
+            
+        for node in provider_assets:
+            # Use model_name if available, fallback to name, then Unnamed
+            name = node.get("model_name") or node.get("name") or "Unnamed"
+            
+            # Check status for deployment (assuming status=True means deployed)
+            # The user JSON showed "status": false
+            is_deployed = node.get("status", False)
+            
+            if is_deployed:
+                deployed_models.append(name)
+            else:
+                undeployed_models.append(name)
+
+    # Recalculate total count if it was 0 but we found models
+    found_count = len(deployed_models) + len(undeployed_models)
+    if total_count == 0 and found_count > 0:
+        total_count = found_count
+
+    result = " AI Model Assets\n"
     result += "=" * 70 + "\n\n"
-
-    result += f"   Total Models Tracked: {total_models}\n"
-    result += f"   ✅ Deployed Models:   {deployed_count}\n"
-    result += f"   ❌ Not Deployed:      {not_deployed_count}\n\n"
-
-    if llm_count > 0:
-        result += f"   Model Types:\n"
-        result += f"   - LLM (Large Language Models): {llm_count}\n"
-
+    result += f"   Total Models Found: {total_count}\n\n"
+    
+    if deployed_models:
+        result += f"Deployed Models ({len(deployed_models)}):\n"
+        # Sort for better readability
+        for name in sorted(deployed_models):
+            result += f"      - {name}\n"
+        result += "\n"
+        
+    if undeployed_models:
+        result += f"Undeployed/Other Models ({len(undeployed_models)}):\n"
+        # Limit the output of undeployed models if there are too many
+        sorted_undeployed = sorted(undeployed_models)
+        display_limit = 20
+        for name in sorted_undeployed[:display_limit]:
+            result += f"      - {name}\n"
+        
+        if len(undeployed_models) > display_limit:
+            result += f"      ... and {len(undeployed_models) - display_limit} more.\n"
+    
     return result
-
 
 async def search_assets_tool(
     client: AccuKnoxClient,
@@ -158,22 +222,44 @@ async def search_assets_tool(
     """Search assets tool implementation"""
 
     try:
+        # # If requesting deployed models statistics
+        # if deployed:
+        #     # We can use default timestamps or accept them as args if needed
+        #     # For now, using a wide range or letting backend handle defaults if possible
+        #     # The user prompt "deployed models" implies current state
+        #     # Using the timestamps from the test case as a baseline or current time
+        #     import time
+
+        #     now = int(time.time())
+        #     two_weeks_ago = now - (14 * 24 * 60 * 60)
+
+        #     data = await client.fetch_model_stats(
+        #         last_seen_after=str(two_weeks_ago),
+        #         last_seen_before=str(now),
+        #     )
+        #     return format_model_stats(data)
         # If requesting deployed models statistics
         if deployed:
-            # We can use default timestamps or accept them as args if needed
-            # For now, using a wide range or letting backend handle defaults if possible
-            # The user prompt "deployed models" implies current state
-            # Using the timestamps from the test case as a baseline or current time
-            import time
+            # Convert dates to timestamps for the new API
+            # from datetime import datetime, timezone
+            
+            # Helper to convert YYYY-MM-DD to unix timestamp
+            def to_ts(date_str: str, end_of_day: bool = False) -> int:
+                dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                if end_of_day:
+                    dt = dt.replace(hour=23, minute=59, second=59)
+                return int(dt.timestamp())
 
-            now = int(time.time())
-            two_weeks_ago = now - (14 * 24 * 60 * 60)
+            start_ts = to_ts(present_on_date_after)
+            end_ts = to_ts(present_on_date_before, end_of_day=True)
 
-            data = await client.fetch_model_stats(
-                last_seen_after=str(two_weeks_ago),
-                last_seen_before=str(now),
+            data = await client.fetch_ai_assets(
+                start_ts=start_ts,
+                end_ts=end_ts,
+                cloud_provider=cloud_provider
             )
-            return format_model_stats(data)
+            return format_ai_assets_stats(data)
+
 
         now = datetime.now()
         # Calculate default time range if not provided (2days window)
