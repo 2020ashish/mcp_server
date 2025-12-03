@@ -140,18 +140,39 @@ To use the `fastmcp` server in HTTP mode (SSE):
     The server will start on `http://0.0.0.0:8000`.
 
 3.  **Configure Client (e.g., VS Code/Cursor):**
-    Update your `mcp.json` to use the SSE endpoint:
+    Update your `mcp.json` to use the SSE endpoint with authentication credentials in the URL query parameters:
 
+    **For Gemini:**
+    ```json
+    {
+      "mcpServers": {
+        "accuknox-http": {
+          "httpUrl": "http://localhost:8000/mcp",
+          "headers": {
+            "token": "YOUR_API_TOKEN",
+            "base_url": "https://cspm.demo.accuknox.com"
+          }
+        }
+      }
+    }
+    ```
+
+    **For Cursor:**
     ```json
     {
       "mcpServers": {
         "accuknox-http": {
           "url": "http://localhost:8000/mcp",
-          "type": "sse"
+          "type": "http",
+          "headers": {
+            "Token": "YOUR_API_TOKEN",
+            "Base_url": "https://cspm.demo.accuknox.com"
+          }
         }
       }
     }
     ```
+    *Note: Replace `YOUR_API_TOKEN` with your actual AccuKnox API token. The `base_url` can still be passed as a query parameter if needed.*
 
 ---
 
