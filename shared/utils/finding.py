@@ -1,23 +1,11 @@
 import asyncio
 import json
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
+from logging_config import logger
 from shared.utils.api_utils import call_api
 
-# Create a module-level logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-# Optional: add a console handler if not already configured
-if not logger.hasHandlers():
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
 # Cache config maps for display/filter fields
 config_maps: Dict[str, Dict[str, Any]] = {}
 

@@ -165,8 +165,8 @@ To use the `fastmcp` server in HTTP mode (SSE):
           "url": "http://localhost:8000/mcp",
           "type": "http",
           "headers": {
-            "Token": "YOUR_API_TOKEN",
-            "Base_url": "https://cspm.demo.accuknox.com"
+            "token": "YOUR_API_TOKEN",
+            "base_url": "https://cspm.demo.accuknox.com"
           }
         }
       }
@@ -190,3 +190,7 @@ Once connected, you can ask questions like:
 *   **Server not starting?** Check the logs or try running the command manually in your terminal to see errors.
 *   **Authentication failed?** Verify your `ACCUKNOX_API_TOKEN` is correct in the `.env` file.
 *   **Path issues?** Always use **absolute paths** in configuration files.
+
+
+1. directly run command
+2. pass as url
