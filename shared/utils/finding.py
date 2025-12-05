@@ -3,8 +3,6 @@ import json
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
-from fastmcp.exceptions import ValidationError
-
 from logging_config import logger
 from shared.utils.api_utils import call_api
 
@@ -120,20 +118,26 @@ def create_api_params(filter_values_kv: Dict[str, Any]) -> Dict[str, str]:
 
 
 def _normalize_dict(value, name):
-    """Accepts a dict or JSON string and returns a dict."""
+    """Accepts a dict or JSON string and returns (result, success)."""
     if value is None or value == "":
-        return {}
+        return {}, True
 
     if isinstance(value, dict):
-        return value
+        return value, True
 
     if isinstance(value, str):
         try:
-            return json.loads(value)
+            return json.loads(value), True
         except json.JSONDecodeError:
-            raise ValidationError(f"{name}: must be a dict or JSON string")
+            return (
+                {name: f"'{value}' is not valid. Expected a dict or JSON string."},
+                False,
+            )
 
-    raise ValidationError(f"{name}: must be a dict or JSON string")
+    return (
+        {name: f"'{value}' is not valid. Expected a dict or JSON string."},
+        False,
+    )
 
 
 async def validate_filters(

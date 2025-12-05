@@ -262,8 +262,13 @@ async def get_finding(
         - For display: Use only fields available in display_fields configuration
         - Call get_finding_config() first to see available filter_fields and display_fields
     """
-    extra_filters = _normalize_dict(extra_filters, "extra_filters")
-    display_fields = _normalize_dict(display_fields, "display_fields")
+    extra_filters, valid = _normalize_dict(extra_filters, "extra_filters")
+    if not valid:
+        return extra_filters
+    display_fields, valid = _normalize_dict(display_fields, "display_fields")
+    if not valid:
+        return display_fields
+
     base_url = ctx.get_state("base_url")
     token = ctx.get_state("token")
     return await _fetch_findings(
