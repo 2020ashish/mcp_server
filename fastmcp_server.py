@@ -28,7 +28,7 @@ verifier = CustomJWTVerifier()
 class BearerTokenMiddleware(Middleware):
     async def on_message(self, context: MiddlewareContext, call_next):
         ctx = context.fastmcp_context
-        base_url, token = _get_auth_context(ctx)
+        base_url, token, include_endpoint = _get_auth_context(ctx)
         if not base_url or not token:
             raise ToolError(
                 "Missing required authentication parameters: base_url or token",
@@ -51,6 +51,7 @@ class BearerTokenMiddleware(Middleware):
 
         ctx.set_state("base_url", base_url)
         ctx.set_state("token", token)
+        ctx.set_state("include_endpoint", include_endpoint)
 
         return await call_next(context)
 
@@ -106,7 +107,7 @@ async def search_assets(
     present_on_date_after: Optional[str] = None,
     present_on_date_before: Optional[str] = None,
     ctx: Context = None,
-) -> str:
+) -> str | dict:
     """
     READ-ONLY: Search and filter cloud infrastructure assets.
 
@@ -140,6 +141,7 @@ async def search_assets(
     base_url = ctx.get_state("base_url")
     token = ctx.get_state("token")
     client = AccuKnoxClient(base_url=base_url, api_token=token)
+    include_endpoint = ctx.get_state("include_endpoint")
 
     return await search_assets_tool(
         client,
@@ -155,6 +157,7 @@ async def search_assets(
         deployed,
         present_on_date_after,
         present_on_date_before,
+        include_endpoint,
     )
 
 
@@ -194,7 +197,10 @@ async def data_type_selection() -> dict:
 
 
 @mcp.tool
-async def get_finding_config(data_type: str | None = None, ctx: Context = None) -> dict:
+async def get_finding_config(
+    data_type: str | None = None,
+    ctx: Context = None,
+) -> dict:
     """
     MCP Tool: Retrieve finding configuration metadata for a given data type.
 
@@ -224,7 +230,14 @@ async def get_finding_config(data_type: str | None = None, ctx: Context = None) 
     """
     base_url = ctx.get_state("base_url")
     token = ctx.get_state("token")
-    return await _get_finding_config(data_type, base_url=base_url, token=token)
+    include_endpoint = ctx.get_state("include_endpoint")
+
+    return await _get_finding_config(
+        data_type,
+        base_url=base_url,
+        token=token,
+        include_endpoint=include_endpoint,
+    )
 
 
 @mcp.tool
@@ -271,6 +284,8 @@ async def get_finding(
 
     base_url = ctx.get_state("base_url")
     token = ctx.get_state("token")
+    include_endpoint = ctx.get_state("include_endpoint")
+
     return await _fetch_findings(
         data_type=data_type,
         ordering=ordering,
@@ -282,6 +297,7 @@ async def get_finding(
         search=search,
         base_url=base_url,
         token=token,
+        include_endpoint=include_endpoint,
     )
 
 
@@ -306,12 +322,15 @@ async def get_finding_filter(
     """
     base_url = ctx.get_state("base_url")
     token = ctx.get_state("token")
+    include_endpoint = ctx.get_state("include_endpoint")
+
     return await _finding_filter(
         filter_field=filter_field,
         data_type=data_type,
         filter_search=filter_search or "",
         base_url=base_url,
         token=token,
+        include_endpoint=include_endpoint,
     )
 
 

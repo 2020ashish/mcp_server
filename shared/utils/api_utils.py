@@ -16,6 +16,7 @@ async def call_api(
     timeout: float = 30.0,
     base_url: Optional[str] = "",
     token: Optional[str] = "",
+    include_endpoint: bool = False,
 ) -> dict:
     """
     Utility function to call GET or POST APIs.
@@ -29,9 +30,11 @@ async def call_api(
         timeout: Request timeout in seconds.
         base_url: Optional base URL to use instead of the configured one.
         api_token: Optional access token to use instead of the default ones.
+        include_endpoint: If True, includes the endpoint URL in the response.
 
     Returns:
-        Parsed JSON response as a dictionary.
+        Parsed JSON response as a dictionary. If include_endpoint is True,
+        adds an 'endpoint_info' dict with method, endpoint_url, and request_body (for POST).
     """
     base_url = base_url.rstrip("/")
 
@@ -60,7 +63,26 @@ async def call_api(
                 return {"error": f"Unsupported method '{method}'"}
 
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+
+            if include_endpoint:
+                # Get the actual URL with query params from the response
+                full_url = str(response.url)
+                endpoint_info = {
+                    "endpoint_url": full_url,
+                    "method": method.upper(),
+                }
+                if method.upper() == "POST" and data:
+                    endpoint_info["request_body"] = data
+
+                # Handle both dict and list responses
+                if isinstance(result, dict):
+                    result["endpoint_info"] = endpoint_info
+                else:
+                    # For list responses, wrap in a dict
+                    result = {"data": result, "endpoint_info": endpoint_info}
+
+            return result
 
         except ReadTimeout:
             logger.error(f"Request to {url} timed out after {timeout}s")

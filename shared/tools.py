@@ -13,7 +13,11 @@ from logging_config import logger
 from .api import AccuKnoxClient
 
 
-def format_asset_list(assets: list, total_count: int, detailed: bool = False) -> str:
+def format_asset_list(
+    assets: list,
+    total_count: int,
+    detailed: bool = False,
+) -> str:
     """Format asset list for display"""
     if not assets:
         return "No assets found."
@@ -222,7 +226,8 @@ async def search_assets_tool(
     deployed: Optional[bool] = None,
     present_on_date_after: Optional[str] = None,
     present_on_date_before: Optional[str] = None,
-) -> str:
+    include_endpoint: bool = False,
+) -> str | dict:
     """Search assets tool implementation"""
     # logger.warning(f" client details {client.api_token} , {client.base_url}")
 
@@ -265,7 +270,10 @@ async def search_assets_tool(
                 end_ts=end_ts,
                 cloud_provider=cloud_provider,
                 deployed=deployed,
+                include_endpoint=include_endpoint,
             )
+            if include_endpoint:
+                return data
             return format_ai_assets_stats(data)
 
         now = datetime.now()
@@ -286,7 +294,10 @@ async def search_assets_tool(
                 present_on_date_after=present_on_date_after,
                 present_on_date_before=present_on_date_before,
                 page_size=1,
+                include_endpoint=include_endpoint,
             )
+            if include_endpoint:
+                return data
             return f"Total assets: {data.get('count', 0)}"
 
         data = await client.fetch_assets(
@@ -299,8 +310,11 @@ async def search_assets_tool(
             present_on_date_after=present_on_date_after,
             present_on_date_before=present_on_date_before,
             page_size=limit,
+            include_endpoint=include_endpoint,
         )
 
+        if include_endpoint:
+            return data
         return format_asset_list(
             data.get("results", []),
             data.get("count", 0),
@@ -313,11 +327,16 @@ async def search_assets_tool(
         return f"Error: {str(e)}"
 
 
-async def get_model_vulnerabilities_tool(client: AccuKnoxClient) -> str:
+async def get_model_vulnerabilities_tool(
+    client: AccuKnoxClient,
+    include_endpoint: bool = False,
+) -> str | dict:
     """Get model vulnerabilities tool implementation"""
 
     try:
-        data = await client.fetch_model_vulnerabilities()
+        data = await client.fetch_model_vulnerabilities(include_endpoint=include_endpoint)
+        if include_endpoint:
+            return data
         return format_model_vulnerabilities(data)
     except httpx.HTTPStatusError as e:
         return f"API Error: {e.response.status_code}"
