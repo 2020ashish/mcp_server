@@ -8,6 +8,7 @@ import httpx
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastmcp import Context
+from fastmcp.server.dependencies import get_http_request
 from jose import JOSEError, jwt
 
 from logging_config import logger
@@ -104,7 +105,7 @@ def _get_auth_context(ctx: Context) -> tuple[Optional[str], Optional[str], bool]
             logger.warning("No context provided")
             return default_base_url, default_token, include_endpoint
 
-        req = ctx.get_http_request()
+        req = get_http_request()
         if not req:
             logger.warning("No HTTP request found")
             return default_base_url, default_token, include_endpoint

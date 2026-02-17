@@ -38,7 +38,7 @@ class BearerTokenMiddleware(Middleware):
             valid, reason = await verifier.verify(base_url, token)
         except Exception as e:
             raise ClientError(f"Token check failed unexpectedly: {str(e)}")
-        
+
         if not valid:
             if reason == "expired":
                 raise ToolError("Token has expired.")
