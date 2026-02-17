@@ -91,9 +91,9 @@ def _get_include_endpoint(value: Optional[any] = None) -> bool:
         return value.lower() in ("true", "1", "yes")
 
     env_val = os.environ.get("INCLUDE_ENDPOINT") or os.environ.get(
-                "include_endpoint",
-                "false",
-            )
+        "include_endpoint",
+        "false",
+    )
     return env_val.lower() in ("true", "1", "yes")
 
 
@@ -121,7 +121,9 @@ def _get_auth_context(ctx: Context) -> tuple[Optional[str], Optional[str], bool]
             or req.query_params.get("base_url")
             or default_base_url
         )
-        include_endpoint = _get_include_endpoint( headers.get("include_endpoint")) or include_endpoint
+        include_endpoint = (
+            _get_include_endpoint(headers.get("include_endpoint")) or include_endpoint
+        )
         return base_url, token, include_endpoint
 
     except Exception as e:
